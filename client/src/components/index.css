@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.hero-bg {
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+}
