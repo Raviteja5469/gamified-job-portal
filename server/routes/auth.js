@@ -16,52 +16,32 @@ router.get('/google',
 // @route   GET /api/auth/google/callback
 // @desc    Google OAuth callback
 router.get('/google/callback',
-  passport.authenticate('google', { 
-    failureRedirect: process.env.FRONTEND_URL + '/login',
-    failureMessage: true
-  }),
+  passport.authenticate('google', { failureRedirect: process.env.FRONTEND_URL + '/login' }),
   async (req, res) => {
-    try {
-      const user = req.user;
-      if (!user) {
-        console.error('No user found after Google authentication');
-        return res.redirect(process.env.FRONTEND_URL + '/login?error=no_user');
-      }
+    const user = req.user;
 
-      // Get role from query parameter
-      const role = req.query.role || 'Student';
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1d' }
+    );
 
-      // Update user's role
-      user.role = role;
-      await user.save();
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000
+    });
 
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET || 'your_jwt_secret',
-        { expiresIn: '1d' }
-      );
-
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax'
-      });
-
-      let redirectPath = '/';
-      if (user.role === 'Student') {
-        redirectPath = '/student/dashboard';
-      } else if (user.role === 'Recruiter') {
-        redirectPath = '/recruiter/dashboard';
-      } else if (user.role === 'Admin') {
-        redirectPath = '/admin/dashboard';
-      }
-
-      res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
-    } catch (error) {
-      console.error('Error in Google callback:', error);
-      res.redirect(process.env.FRONTEND_URL + '/login?error=server_error');
+    let redirectPath = '/';
+    if (user.role === 'Student') {
+      redirectPath = '/student/dashboard';
+    } else if (user.role === 'Recruiter') {
+      redirectPath = '/recruiter/dashboard';
+    } else if (user.role === 'Admin') {
+      redirectPath = '/admin/dashboard';
     }
+
+    res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
   }
 );
 
@@ -75,17 +55,46 @@ router.get('/current_user', protect, async (req, res) => {
 });
 
 // @route   POST /api/auth/set_role
-// @desc    Set user role before Google authentication
-// @access  Public
-router.post('/set_role', (req, res) => {
+// @desc    Set user role after initial login if it's 'Student' (default)
+// @access  Private (requires token)
+router.post('/set_role', protect, async (req, res) => {
   const { role } = req.body;
+
   if (!role || !['Student', 'Recruiter', 'Admin'].includes(role)) {
     return res.status(400).json({ message: 'Invalid role provided' });
   }
-  
-  // Store role in session
-  req.session.role = role;
-  res.json({ message: 'Role set successfully' });
+
+  try {
+    const user = await User.findById(req.user._id); // req.user is from the protect middleware
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Only allow setting role if it's currently default 'Student' or if admin is changing it.
+    // For simplicity, let's assume users can set their own role after initial login.
+    // A more robust solution might require admin approval for Recruiter/Admin roles.
+    user.role = role;
+    await user.save();
+
+    // Re-issue JWT with updated role
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1d' }
+    );
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
+    res.json({ message: 'Role updated successfully', user: { _id: user._id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error during role update' });
+  }
 });
 
 

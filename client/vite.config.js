@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:5000', // Proxy API requests to backend
+      '/api': 'https://jobquest-backend-1-3l3w.onrender.com', // Proxy API requests to backend
     },
   },
 });

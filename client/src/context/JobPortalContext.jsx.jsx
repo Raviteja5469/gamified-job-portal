@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://jobquest-backend-1-3l3w.onrender.com/api' || ;
+
 const JobPortalContext = createContext();
 
 export function JobPortalProvider({ children }) {
@@ -20,7 +22,7 @@ export function JobPortalProvider({ children }) {
     try {
       // Store role in localStorage before redirect
       localStorage.setItem('selectedRole', selectedRole);
-      window.location.href = 'http://localhost:5000/api/auth/google';
+      window.location.href = `${API_URL}/api/auth/google`;
     } catch (error) {
       console.error('Error initiating Google auth:', error);
     }
@@ -30,7 +32,7 @@ export function JobPortalProvider({ children }) {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/current_user', {
+        const response = await fetch(`${API_URL}/api/auth/current_user`, {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -71,7 +73,7 @@ export function JobPortalProvider({ children }) {
 
   const logout = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/logout', {
+      const response = await fetch(`${API_URL}/api/auth/logout`, {
         method: 'GET',
         credentials: 'include',
         headers: {
