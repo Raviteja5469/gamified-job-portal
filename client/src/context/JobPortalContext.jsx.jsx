@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://jobquest-backend-1-3l3w.onrender.com/api' ;
+const API_URL = import.meta.env.VITE_API_URL || 'https://jobquest-backend-1-3l3w.onrender.com/' ;
 
 const JobPortalContext = createContext();
 
