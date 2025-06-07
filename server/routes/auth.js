@@ -40,7 +40,6 @@ router.get('/google/callback',
     } else if (user.role === 'Admin') {
       redirectPath = '/admin/dashboard';
     }
-
     res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
   }
 );

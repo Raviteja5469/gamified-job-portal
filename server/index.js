@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const passport = require('passport');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -65,6 +66,14 @@ app.use('/api/auth', authRoutes); // <--- Add this line
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'Gamified Job Portal API' });
+});
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// The "catchall" handler: for any request that doesn't match an API route, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 const PORT = 5000;
